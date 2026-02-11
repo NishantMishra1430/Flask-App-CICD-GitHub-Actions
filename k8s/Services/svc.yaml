@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+
+metadata:
+  name: tt-svc
+
+spec:
+  type: NodePort
+  selector:
+    app: tt
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30001
+  

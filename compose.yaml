@@ -1,0 +1,51 @@
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: flask-mysql-cont
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=nishant_db
+      - MYSQL_USER=nishant_sql
+      - MYSQL_PASSWORD=1430
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./flask-data:/var/lib/mysql
+      - ./message.sql:/docker-entrypoint-initdb.d/message.sql  
+    networks:
+      - flask-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  flask-app:
+    image: flask-app:1.0.1
+    container_name: flask-app-cont
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+    networks:
+      - flask-net
+    environment:
+      - MYSQL_HOST=mysql  
+      - MYSQL_USER=nishant_sql
+      - MYSQL_PASSWORD=1430
+      - MYSQL_DB=nishant_db
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  flask-net:
+
+volumes:
+  flask-data:

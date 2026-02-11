@@ -1,0 +1,43 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: tt-mysql-sfs
+spec:
+  serviceName: tt-mysql-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tt
+  template:
+    metadata:
+      labels:
+        app: tt
+    spec:
+      containers:
+        - name: tt-mysql-db
+          image: 'mysql:5.7'
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+            - name: MYSQL_DATABASE
+              value: nishant_db
+            - name: MYSQL_USER
+              value: nishant_sql
+            - name: MYSQL_PASSWORD
+              value: "1430"
+
+          volumeMounts:
+            - name: tt-mysql-data
+              mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: tt-mysql-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi
+
