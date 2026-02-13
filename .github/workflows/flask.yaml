@@ -1,0 +1,84 @@
+name: Flask app Deployment CICD Automation
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Code Checkout
+      uses: actions/checkout@v4
+
+    - name: Calculate Version
+      id: versioning
+      run: |
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+        echo "Current: $LATEST_TAG"
+
+        CLEAN_TAG=${LATEST_TAG#v}
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$CLEAN_TAG"
+
+        COMMIT_MSG=$(git log -1 --pretty=%B)
+
+        NEW_MAJOR=$MAJOR
+        NEW_MINOR=$MINOR
+        NEW_PATCH=$PATCH
+
+        if [[ "$COMMIT_MSG" == *"#major"* ]]; then
+          NEW_MAJOR=$((MAJOR + 1))
+          NEW_MINOR=0
+          NEW_PATCH=0
+        elif [[ "$COMMIT_MSG" == *"#minor"* ]] || [[ "$COMMIT_MSG" == *"feat:"* ]]; then
+          NEW_MINOR=$((MINOR + 1))
+          NEW_PATCH=0
+        else
+          
+          NEW_PATCH=$((PATCH + 1))
+        fi
+
+        if [ $NEW_PATCH -gt 9 ]; then
+          NEW_PATCH=0
+          NEW_MINOR=$((NEW_MINOR + 1))
+        fi
+        if [ $NEW_MINOR -gt 9 ]; then
+          NEW_MINOR=0
+          NEW_MAJOR=$((NEW_MAJOR + 1))
+        fi
+
+        NEW_TAG="v$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+        echo "Next Version: $NEW_TAG"
+        echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+    - name: Docker login
+      uses: docker/login-action@v3
+      with:
+        username: ${{vars.DOCKER_USERNAME}}
+        password: ${{secrets.DOCKER_PASSWORD}}
+
+    - name: Docker Buildx setup
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and Push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ vars.DOCKER_USERNAME }}/flask-app:${{ steps.versioning.outputs.tag }}
+
+    - name: Deploy on K3S
+      run: mkdir -p ~/.kube echo "${{secrets.KUBE_CONFIG}}" > ~/.kube/config kubectl set image deployment/deployment.yaml flask-app-cont=${{vars.DOCKER_USERNAME}}/flask-app:${{ steps.versioning.outputs.tag }} kubectl rollout status deployment/deployment.yaml
+
+    - name: Push Git Tag
+      run: |
+        git config user.name "${{vars.GITHUB_USERNAME}}"
+        git config user.email "${{vars.ADMIN_GMAIL}}"
+        git tag ${{ steps.versioning.outputs.tag }}
+        git push origin ${{ steps.versioning.outputs.tag }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
