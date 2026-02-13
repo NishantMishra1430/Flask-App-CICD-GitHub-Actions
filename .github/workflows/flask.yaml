@@ -76,9 +76,9 @@ jobs:
 
     - name: Push Git Tag
       run: |
-        git config user.name "${{vars.GITHUB_USERNAME}}"
+        git config user.name "${{vars.GITH_USERNAME}}"
         git config user.email "${{vars.ADMIN_GMAIL}}"
         git tag ${{ steps.versioning.outputs.tag }}
         git push origin ${{ steps.versioning.outputs.tag }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITH_TOKEN }}
