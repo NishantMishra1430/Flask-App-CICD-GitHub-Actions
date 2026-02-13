@@ -74,7 +74,7 @@ jobs:
     - name: Deploy on K3S
       run: |
         mkdir -p ~/.kube
-        echo "${{secrets.KUBE_CONFIG}}" > ~/.kube/config.yaml
+        echo "${{secrets.KUBE_CONFIG}}" > ~/.kube/config.yml
         kubectl set image deployment/deployment.yaml flask-app-cont=${{vars.DOCKER_USERNAME}}/flask-app:${{ steps.versioning.outputs.tag }}
         kubectl rollout status deployment/deployment.yaml
 
