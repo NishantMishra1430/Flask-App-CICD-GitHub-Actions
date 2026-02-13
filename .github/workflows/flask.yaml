@@ -72,7 +72,11 @@ jobs:
           ${{ vars.DOCKER_USERNAME }}/flask-app:${{ steps.versioning.outputs.tag }}
 
     - name: Deploy on K3S
-      run: mkdir -p ~/.kube echo "${{secrets.KUBE_CONFIG}}" > ~/.kube/config kubectl set image deployment/deployment.yaml flask-app-cont=${{vars.DOCKER_USERNAME}}/flask-app:${{ steps.versioning.outputs.tag }} kubectl rollout status deployment/deployment.yaml
+      run: |
+        mkdir -p ~/.kube
+        echo "${{secrets.KUBE_CONFIG}}" > ~/.kube/config
+        kubectl set image deployment/deployment.yaml flask-app-cont=${{vars.DOCKER_USERNAME}}/flask-app:${{ steps.versioning.outputs.tag }}
+        kubectl rollout status deployment/deployment.yaml
 
     - name: Push Git Tag
       run: |
